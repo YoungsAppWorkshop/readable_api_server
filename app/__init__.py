@@ -9,9 +9,10 @@ app.config.from_object('config')
 # Create a Database object
 db = SQLAlchemy(app)
 
-# Import and Register blueprint
+# Import api blueprint
 from .controllers import api as api_module
 
+# Register blueprint, set its url prefix: app.url/api
 app.register_blueprint(api_module, url_prefix='/api')
 
 
