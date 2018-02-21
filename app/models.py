@@ -15,7 +15,7 @@ class Category(db.Model):
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "<Category (name='%s', path='%s')>" % (self.name, self.path)
+        return "Category(name='{name}', path='{path}')".format(**self)
 
     @property
     def serialize(self):
@@ -30,46 +30,46 @@ class Post(db.Model):
     """  A class which represents a Post
 
     Attributes:
+        author: string. Author name of the post
+        body: string. Body of the post
+        category_path: string. Category path of the post. Foreign Key
+        comment_count: int. Number of comments for the post
+        deleted: bool. Flag variable if the post is deleted
         id: string. UUID(v4). Primary key
         timestamp: int. timestamp of the post created
         title: string. Title of the post
-        body: string. Body of the post
-        author: string. Author name of the post
-        category: string. Category path of the post. Foreign Key
         vote_score: int. Vote score of the post
-        deleted: bool. Flag variable if the post is deleted
-        comment_count: int. Number of comments for the post
     """
     __tablename__ = 'post'
 
+    author = db.Column(db.String(), nullable=False)
+    body = db.Column(db.String(), nullable=False)
+    category_path = db.Column(db.String(32), db.ForeignKey('category.path'))
+    category = db.relationship(Category)
+    comment_count = db.Column(db.Integer)
+    deleted = db.Column(db.Boolean, nullable=False)
     id = db.Column(db.String(36), primary_key=True)
     timestamp = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(), nullable=False)
-    body = db.Column(db.String(), nullable=False)
-    author = db.Column(db.String(), nullable=False)
-    category_path = db.Column(db.String(32), db.ForeignKey('category.path'))
-    category = db.relationship(Category)
     vote_score = db.Column(db.Integer)
-    deleted = db.Column(db.Boolean, nullable=False)
-    comment_count = db.Column(db.Integer)
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "<Post (id='%s', title='%s')>" % (self.id, self.title)
+        return "Post(id='{id}', title='{title}')".format(**self)
 
     @property
     def serialize(self):
         """ Return object data in easily serializeable format"""
         return {
+            'author': self.author,
+            'body': self.body,
+            'category': self.category_path,
+            'commentCount': self.comment_count,
+            'deleted': self.deleted,
             'id': self.id,
             'timestamp': self.timestamp,
             'title': self.title,
-            'body': self.body,
-            'author': self.author,
-            'category': self.category_path,
-            'voteScore': self.vote_score,
-            'deleted': self.deleted,
-            'commentCount': self.comment_count
+            'voteScore': self.vote_score
         }
 
 
@@ -77,41 +77,41 @@ class Comment(db.Model):
     """  A class which represents a Comment
 
     Attributes:
+        author: string. Author name of the comment
+        body: string. Body of the comment
+        deleted: bool. Flag variable if the comment is deleted
         id: string. UUID(v4). Primary key
+        parent_deleted: bool. Flag variable if the parent post is deleted
         parent_id: string. UUID(v4). ID of a Post. Foreign Key
         timestamp: int. timestamp of the comment created
-        body: string. Body of the comment
-        author: string. Author name of the comment
         vote_score: int. Vote score of the comment
-        deleted: bool. Flag variable if the comment is deleted
-        parent_deleted: bool. Flag variable if the parent post is deleted
     """
     __tablename__ = 'comment'
 
+    author = db.Column(db.String(), nullable=False)
+    body = db.Column(db.String(), nullable=False)
+    deleted = db.Column(db.Boolean, nullable=False)
     id = db.Column(db.String(36), primary_key=True)
+    parent_deleted = db.Column(db.Boolean, nullable=False)
     parent_id = db.Column(db.String(36), db.ForeignKey('post.id'))
     post = db.relationship(Post)
     timestamp = db.Column(db.Integer, nullable=False)
-    body = db.Column(db.String(), nullable=False)
-    author = db.Column(db.String(), nullable=False)
     vote_score = db.Column(db.Integer)
-    deleted = db.Column(db.Boolean, nullable=False)
-    parent_deleted = db.Column(db.Boolean, nullable=False)
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "<Comment (id='%s', author='%s')>" % (self.id, self.author)
+        return "Comment(id='{id}', parent_id='{parent_id}')".format(**self)
 
     @property
     def serialize(self):
         """ Return object data in easily serializeable format"""
         return {
+            'author': self.author,
+            'body': self.body,
+            'deleted': self.deleted,
             'id': self.id,
+            'parentDeleted': self.parent_deleted,
             'parentId': self.parent_id,
             'timestamp': self.timestamp,
-            'body': self.body,
-            'author': self.author,
-            'voteScore': self.vote_score,
-            'deleted': self.deleted,
-            'parentDeleted': self.parent_deleted
+            'voteScore': self.vote_score
         }
