@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 # Import the database object and models
@@ -50,12 +51,12 @@ def add_post(request):
     """ Add a new Post and return it on POST request"""
     # Parse data from the request
     try:
-        author = request.form['author'].strip()
-        body = request.form['body'].strip()
-        category_path = request.form['category']
-        id = request.form['id']
-        timestamp = int(request.form['timestamp'])
-        title = request.form['title'].strip()
+        author = request.get_json()['author'].strip()
+        body = request.get_json()['body'].strip()
+        category_path = request.get_json()['category']
+        id = request.get_json()['id']
+        timestamp = int(request.get_json()['timestamp'])
+        title = request.get_json()['title'].strip()
     except Exception:
         return jsonify({'error': 'Bad Request'}), 400
 
@@ -73,6 +74,9 @@ def add_post(request):
                         timestamp=timestamp, title=title, vote_score=0)
         db.session.add(new_post)
         db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Duplicate Post ID'}), 400
     except Exception:
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
@@ -105,6 +109,7 @@ def delete_post(post_id):
         comments = db.session.query(Comment)\
             .filter(Comment.parent_id == post_id)\
             .update({Comment.parent_deleted: True}, synchronize_session=False)
+        db.session.commit()
     except NoResultFound as e:
         db.session.rollback()
         return jsonify({'error': 'No Result Found'}), 404
@@ -112,8 +117,7 @@ def delete_post(post_id):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        db.session.commit()
-    return jsonify(post.serialize)
+        return jsonify(post.serialize)
 
 
 def jsonify_post(post_id):
@@ -149,6 +153,7 @@ def vote_post(post_id, request):
         else:
             post.vote_score -= 1
         db.session.add(post)
+        db.session.commit()
     except NoResultFound:
         db.session.rollback()
         return jsonify({'error': 'No Result Found'}), 404
@@ -156,7 +161,6 @@ def vote_post(post_id, request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        db.session.commit()
         return jsonify(post.serialize)
 
 
