@@ -90,9 +90,34 @@ def handle_requests_posts():
     return jsonify_all_posts()
 
 
-@api.route('/posts/<post_id>', methods=['GET'])
+# For API Endpoint:     /posts/:id
+def delete_post(post_id):
+    """ Delete a Post and return it on DELETE request
+        - Sets the deleted flag for a post to True
+        - Sets the parent_deleted flag for all child comments to True
+    """
+    try:
+        # Set the deleted flag for the post to True
+        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post.deleted = True
+        db.session.add(post)
+        # Set the parent_deleted flag for all child comments to True
+        comments = db.session.query(Comment)\
+            .filter(Comment.parent_id == post_id)\
+            .update({Comment.parent_deleted: True}, synchronize_session=False)
+    except NoResultFound as e:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        db.session.commit()
+    return jsonify(post.serialize)
+
+
 def jsonify_post(post_id):
-    """ Return a post information in JSON """
+    """ Return the post information in JSON on GET request """
     try:
         post = db.session.query(Post).filter(Post.id == post_id).one()
     except NoResultFound as e:
@@ -101,6 +126,23 @@ def jsonify_post(post_id):
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify(post.serialize)
+
+
+@api.route('/posts/<post_id>', methods=['DELETE', 'GET', 'POST', 'PUT'])
+def handle_requests_post(post_id):
+    """ Handle HTTP requests for API Endpoint: /posts/:id """
+
+    # POST /posts/:id       : Vote on the post
+    if request.method == 'POST':
+        return "POST Request"
+    # PUT /posts/:id        : Edit the details of the post
+    if request.method == 'PUT':
+        return "PUT Request"
+    # DELETE /posts/:id     : Delete the post
+    if request.method == 'DELETE':
+        return delete_post(post_id)
+    # GET /posts/:id        : Return the post information in JSON
+    return jsonify_post(post_id)
 
 
 @api.route('/posts/<post_id>/comments/', methods=['GET'])
