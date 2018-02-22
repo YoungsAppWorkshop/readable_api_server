@@ -160,10 +160,9 @@ def jsonify_comments_for_post(post_id):
 # Helper Functions
 def is_valid_category(category_path):
     """ Check if a category_path is valid"""
-
     try:
-        category = db.session.query(Category).filter_by(
-            path=category_path).one()
-        return True
+        category = db.session.query(Category).filter_by(path=category_path).one()  # noqa
     except Exception:
         return False
+    else:
+        return True
