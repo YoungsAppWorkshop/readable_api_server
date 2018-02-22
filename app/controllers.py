@@ -128,13 +128,45 @@ def jsonify_post(post_id):
         return jsonify(post.serialize)
 
 
+def vote_post(post_id, request):
+    """ Vote for/against the post on POST request """
+
+    # Parse data from the request
+    try:
+        option = request.get_json()['option']
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
+
+    # Validate option from the request
+    if option != 'upVote' and option != 'downVote':
+        return jsonify({'error': "'option' parameter can be either 'upVote' or 'downVote'"}), 400  # noqa
+
+    # Vote for/against the post and store it in database
+    try:
+        post = db.session.query(Post).filter(Post.id == post_id).one()
+        if option == 'upVote':
+            post.vote_score += 1
+        else:
+            post.vote_score -= 1
+        db.session.add(post)
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        db.session.commit()
+        return jsonify(post.serialize)
+
+
 @api.route('/posts/<post_id>', methods=['DELETE', 'GET', 'POST', 'PUT'])
 def handle_requests_post(post_id):
     """ Handle HTTP requests for API Endpoint: /posts/:id """
 
     # POST /posts/:id       : Vote on the post
     if request.method == 'POST':
-        return "POST Request"
+        return vote_post(post_id, request)
     # PUT /posts/:id        : Edit the details of the post
     if request.method == 'PUT':
         return "PUT Request"
