@@ -11,7 +11,7 @@ api = Blueprint('api', __name__)
 
 
 # For API Endpoint:     /categories
-@api.route('/categories/', methods=['GET'])
+@api.route('/categories', methods=['GET'])
 def jsonify_all_categories():
     """ Return all categories in JSON on GET request """
     try:
@@ -23,7 +23,7 @@ def jsonify_all_categories():
 
 
 # For API Endpoint:     /:category/posts
-@api.route('/<category>/posts/', methods=['GET'])
+@api.route('/<category>/posts', methods=['GET'])
 def jsonify_posts_for_category(category):
     """ Return all posts for a category in JSON on GET request """
     try:
@@ -80,7 +80,7 @@ def add_post(request):
         return jsonify(new_post.serialize)
 
 
-@api.route('/posts/', methods=['GET', 'POST'])
+@api.route('/posts', methods=['GET', 'POST'])
 def handle_requests_posts():
     """ Handle HTTP requests for API Endpoint: /posts """
     # POST /posts       : Add a new post and return it
@@ -145,7 +145,7 @@ def handle_requests_post(post_id):
     return jsonify_post(post_id)
 
 
-@api.route('/posts/<post_id>/comments/', methods=['GET'])
+@api.route('/posts/<post_id>/comments', methods=['GET'])
 def jsonify_comments_for_post(post_id):
     """ Return all comments for a post in JSON """
     try:
