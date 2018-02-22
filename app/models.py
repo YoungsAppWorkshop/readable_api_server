@@ -15,7 +15,7 @@ class Category(db.Model):
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "Category(name='{name}', path='{path}')".format(**self)
+        return "Category(name='{}', path='{}')".format(self.name, self.path)
 
     @property
     def serialize(self):
@@ -55,7 +55,7 @@ class Post(db.Model):
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "Post(id='{id}', title='{title}')".format(**self)
+        return "Post(id='{}', title='{}')".format(self.id, self.title)
 
     @property
     def serialize(self):
@@ -100,7 +100,7 @@ class Comment(db.Model):
 
     def __repr__(self):
         """ Define string representations of the object """
-        return "Comment(id='{id}', parent_id='{parent_id}')".format(**self)
+        return "Comment(id='{}', parent_id='{}')".format(self.id, self.parent_id)  # noqa
 
     @property
     def serialize(self):
