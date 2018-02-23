@@ -233,6 +233,54 @@ def jsonify_comments_for_post(post_id):
         return jsonify([comment.serialize for comment in comments])
 
 
+@api.route('/comments', methods=['POST'])
+def add_comment():
+    """ POST    /comments
+            - Add a comment to a post and return it in JSON
+    """
+    # Parse data from the request
+    try:
+        author = request.get_json()['author'].strip()
+        body = request.get_json()['body'].strip()
+        id = request.get_json()['id']
+        parent_id = request.get_json()['parentId']
+        timestamp = int(request.get_json()['timestamp'])
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
+
+    # Validate data from the request
+    if author == '' or body == '':
+        return jsonify({'error': "Comment body and author can't be a blank"}), 400  # noqa
+
+    # Validate if the parent post exists
+    try:
+        post = db.session.query(Post).filter(Post.id == parent_id).one()
+    except NoResultFound:
+        return jsonify({'error': 'No Parent Post Found'}), 403
+    except Exception:
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+    # Validate if the parent post is deleted
+    if post.deleted:
+        return jsonify({'error': 'Parent Post Deleted'}), 403
+
+    # Create a new comment and store it in Database
+    try:
+        new_comment = Comment(author=author, body=body, deleted=False, id=id,
+                              parent_deleted=False, parent_id=parent_id,
+                              timestamp=timestamp, vote_score=0)
+        db.session.add(new_comment)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Duplicate Comment ID'}), 409
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(new_comment.serialize)
+
+
 # Helper Functions
 def is_valid_category(category_path):
     """ Check if a category_path is valid"""
