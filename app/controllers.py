@@ -281,6 +281,120 @@ def add_comment():
         return jsonify(new_comment.serialize)
 
 
+@api.route('/comments/<comment_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def handle_requests_comment(comment_id):
+    """ Handle HTTP requests for API Endpoint: /comments/:id """
+
+    # GET       /comments/:id       : Return the comment information in JSON
+    if request.method == 'GET':
+        return jsonify_comment(comment_id)
+    # POST      /comments/:id       : Vote on the comment
+    if request.method == 'POST':
+        return vote_comment(comment_id, request)
+    # PUT       /comments/:id       : Edit the details of the comment
+    if request.method == 'PUT':
+        return edit_comment(comment_id, request)
+    # DELETE    /comments/:id       : Delete the comment
+    return delete_comment(comment_id)
+
+
+def jsonify_comment(comment_id):
+    """ GET     /comments/:id
+            - Return the comment information in JSON
+    """
+    try:
+        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+    except NoResultFound:
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(comment.serialize)
+
+
+def vote_comment(comment_id, request):
+    """ POST    /comments/:id
+            - Vote for/against a comment and return it in JSON
+    """
+    # Parse data from the request
+    try:
+        option = request.get_json()['option']
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
+
+    # Validate option from the request
+    if option != 'upVote' and option != 'downVote':
+        return jsonify({'error': "'option' parameter can be either 'upVote' or 'downVote'"}), 400  # noqa
+
+    # Vote for/against the comment and store it in database
+    try:
+        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        if option == 'upVote':
+            comment.vote_score += 1
+        else:
+            comment.vote_score -= 1
+        db.session.add(comment)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(comment.serialize)
+
+
+def edit_comment(comment_id, request):
+    """ PUT     /comments/:id
+            - Edit a comment and return it in JSON
+    """
+    # Parse data from the request
+    try:
+        body = request.get_json()['body'].strip()
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
+
+    # Validate data from the request
+    if body == '':
+        return jsonify({'error': "Comment body can't be a blank"}), 400
+
+    # Edit the comment and store it in database
+    try:
+        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment.body = body
+        db.session.add(comment)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(comment.serialize)
+
+
+def delete_comment(comment_id):
+    """ DELETE  /comments/:id
+            - Delete a comment and return it in JSON
+    """
+    try:
+        # Set the deleted flag for the comment to True
+        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment.deleted = True
+        db.session.add(comment)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(comment.serialize)
+
+
 # Helper Functions
 def is_valid_category(category_path):
     """ Check if a category_path is valid"""
