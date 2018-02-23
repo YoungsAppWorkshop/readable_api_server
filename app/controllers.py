@@ -120,6 +120,37 @@ def delete_post(post_id):
         return jsonify(post.serialize)
 
 
+def edit_post(post_id, request):
+    """ Edit the post on PUT request """
+
+    # Parse data from the request
+    try:
+        body = request.get_json()['body'].strip()
+        title = request.get_json()['title'].strip()
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
+
+    # Validate data from the request
+    if body == '' or title == '':
+        return jsonify({'error': "Post title, body can't be a blank"}), 400
+
+    # Edit the post and store it in database
+    try:
+        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post.body = body
+        post.title = title
+        db.session.add(post)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(post.serialize)
+
+
 def jsonify_post(post_id):
     """ Return the post information in JSON on GET request """
     try:
@@ -173,7 +204,7 @@ def handle_requests_post(post_id):
         return vote_post(post_id, request)
     # PUT /posts/:id        : Edit the details of the post
     if request.method == 'PUT':
-        return "PUT Request"
+        return edit_post(post_id, request)
     # DELETE /posts/:id     : Delete the post
     if request.method == 'DELETE':
         return delete_post(post_id)
