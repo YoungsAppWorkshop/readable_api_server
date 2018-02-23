@@ -11,44 +11,59 @@ from .models import Category, Comment, Post
 api = Blueprint('api', __name__)
 
 
-# For API Endpoint:     /categories
 @api.route('/categories', methods=['GET'])
 def jsonify_all_categories():
-    """ Return all categories in JSON on GET request """
+    """ GET     /categories
+            - Return all categories in JSON
+    """
     try:
         categories = db.session.query(Category).order_by(Category.path)
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify(categories=[category.serialize for category in categories])  # noqa
 
 
-# For API Endpoint:     /:category/posts
 @api.route('/<category>/posts', methods=['GET'])
 def jsonify_posts_for_category(category):
-    """ Return all posts for a category in JSON on GET request """
+    """ GET     /:category/posts
+            - Return all posts for a category in JSON
+    """
     try:
         posts = db.session.query(Post).filter(Post.category_path == category)\
             .order_by(Post.timestamp)
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify([post.serialize for post in posts])
 
 
-# For API Endpoint:     /posts
+@api.route('/posts', methods=['GET', 'POST'])
+def handle_requests_posts():
+    """ Handle HTTP requests for API Endpoint: /posts """
+    # GET   /posts      : Return all posts in JSON
+    if request.method == 'GET':
+        return jsonify_all_posts()
+    # POST  /posts      : Add a new post and return it
+    return add_post(request)
+
+
 def jsonify_all_posts():
-    """ Return all posts in JSON on GET request"""
+    """ GET     /posts
+            - Return all posts in JSON
+    """
     try:
         posts = db.session.query(Post).order_by(Post.timestamp)
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify([post.serialize for post in posts])
 
 
 def add_post(request):
-    """ Add a new Post and return it on POST request"""
+    """ POST    /posts
+            - Add a new Post and return it in JSON
+    """
     # Parse data from the request
     try:
         author = request.get_json()['author'].strip()
@@ -84,88 +99,41 @@ def add_post(request):
         return jsonify(new_post.serialize)
 
 
-@api.route('/posts', methods=['GET', 'POST'])
-def handle_requests_posts():
-    """ Handle HTTP requests for API Endpoint: /posts """
-    # POST /posts       : Add a new post and return it
+@api.route('/posts/<post_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def handle_requests_post(post_id):
+    """ Handle HTTP requests for API Endpoint: /posts/:id """
+
+    # GET       /posts/:id      : Return the post information in JSON
+    if request.method == 'GET':
+        return jsonify_post(post_id)
+    # POST      /posts/:id      : Vote on the post
     if request.method == 'POST':
-        return add_post(request)
-    # GET /posts        : Return all posts in JSON
-    return jsonify_all_posts()
-
-
-# For API Endpoint:     /posts/:id
-def delete_post(post_id):
-    """ Delete a Post and return it on DELETE request
-        - Sets the deleted flag for a post to True
-        - Sets the parent_deleted flag for all child comments to True
-    """
-    try:
-        # Set the deleted flag for the post to True
-        post = db.session.query(Post).filter(Post.id == post_id).one()
-        post.deleted = True
-        db.session.add(post)
-        # Set the parent_deleted flag for all child comments to True
-        comments = db.session.query(Comment)\
-            .filter(Comment.parent_id == post_id)\
-            .update({Comment.parent_deleted: True}, synchronize_session=False)
-        db.session.commit()
-    except NoResultFound as e:
-        db.session.rollback()
-        return jsonify({'error': 'No Result Found'}), 404
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Internal Server Error'}), 500
-    else:
-        return jsonify(post.serialize)
-
-
-def edit_post(post_id, request):
-    """ Edit the post on PUT request """
-
-    # Parse data from the request
-    try:
-        body = request.get_json()['body'].strip()
-        title = request.get_json()['title'].strip()
-    except Exception:
-        return jsonify({'error': 'Bad Request'}), 400
-
-    # Validate data from the request
-    if body == '' or title == '':
-        return jsonify({'error': "Post title, body can't be a blank"}), 400
-
-    # Edit the post and store it in database
-    try:
-        post = db.session.query(Post).filter(Post.id == post_id).one()
-        post.body = body
-        post.title = title
-        db.session.add(post)
-        db.session.commit()
-    except NoResultFound:
-        db.session.rollback()
-        return jsonify({'error': 'No Result Found'}), 404
-    except Exception:
-        db.session.rollback()
-        return jsonify({'error': 'Internal Server Error'}), 500
-    else:
-        return jsonify(post.serialize)
+        return vote_post(post_id, request)
+    # PUT       /posts/:id      : Edit the details of the post
+    if request.method == 'PUT':
+        return edit_post(post_id, request)
+    # DELETE    /posts/:id      : Delete the post
+    return delete_post(post_id)
 
 
 def jsonify_post(post_id):
-    """ Return the post information in JSON on GET request """
+    """ GET     /posts/:id
+            - Return the post information in JSON
+    """
     try:
         post = db.session.query(Post).filter(Post.id == post_id).one()
-    except NoResultFound as e:
+    except NoResultFound:
         return jsonify({'error': 'No Result Found'}), 404
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify(post.serialize)
 
 
 def vote_post(post_id, request):
-    """ Vote for/against the post on POST request """
-
+    """ POST    /posts/:id
+            - Vote for/against a post and return it in JSON
+    """
     # Parse data from the request
     try:
         option = request.get_json()['option']
@@ -195,30 +163,71 @@ def vote_post(post_id, request):
         return jsonify(post.serialize)
 
 
-@api.route('/posts/<post_id>', methods=['DELETE', 'GET', 'POST', 'PUT'])
-def handle_requests_post(post_id):
-    """ Handle HTTP requests for API Endpoint: /posts/:id """
+def edit_post(post_id, request):
+    """ PUT     /posts/:id
+            - Edit a post and return it in JSON
+    """
+    # Parse data from the request
+    try:
+        body = request.get_json()['body'].strip()
+        title = request.get_json()['title'].strip()
+    except Exception:
+        return jsonify({'error': 'Bad Request'}), 400
 
-    # POST /posts/:id       : Vote on the post
-    if request.method == 'POST':
-        return vote_post(post_id, request)
-    # PUT /posts/:id        : Edit the details of the post
-    if request.method == 'PUT':
-        return edit_post(post_id, request)
-    # DELETE /posts/:id     : Delete the post
-    if request.method == 'DELETE':
-        return delete_post(post_id)
-    # GET /posts/:id        : Return the post information in JSON
-    return jsonify_post(post_id)
+    # Validate data from the request
+    if body == '' or title == '':
+        return jsonify({'error': "Post title, body can't be a blank"}), 400
+
+    # Edit the post and store it in database
+    try:
+        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post.body = body
+        post.title = title
+        db.session.add(post)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(post.serialize)
+
+
+def delete_post(post_id):
+    """ DELETE  /posts/:id
+            - Delete a Post and return it in JSON
+    """
+    try:
+        # Set the deleted flag for the post to True
+        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post.deleted = True
+        db.session.add(post)
+        # Set the parent_deleted flag for all child comments to True
+        comments = db.session.query(Comment)\
+            .filter(Comment.parent_id == post_id)\
+            .update({Comment.parent_deleted: True}, synchronize_session=False)
+        db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'No Result Found'}), 404
+    except Exception:
+        db.session.rollback()
+        return jsonify({'error': 'Internal Server Error'}), 500
+    else:
+        return jsonify(post.serialize)
 
 
 @api.route('/posts/<post_id>/comments', methods=['GET'])
 def jsonify_comments_for_post(post_id):
-    """ Return all comments for a post in JSON """
+    """ GET     /posts/:id/comments
+            - Return all comments for a post in JSON
+    """
     try:
         comments = db.session.query(Comment)\
             .filter(Comment.parent_id == post_id).order_by(Comment.timestamp)
-    except Exception as e:
+    except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify([comment.serialize for comment in comments])
