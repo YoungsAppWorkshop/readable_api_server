@@ -30,7 +30,9 @@ def jsonify_posts_for_category(category):
             - Return all posts for a category in JSON
     """
     try:
-        posts = db.session.query(Post).filter(Post.category_path == category)\
+        posts = db.session.query(Post)\
+            .filter(Post.category_path == category)\
+            .filter(Post.deleted.is_(False))\
             .order_by(Post.timestamp)
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
@@ -53,7 +55,9 @@ def jsonify_all_posts():
             - Return all posts in JSON
     """
     try:
-        posts = db.session.query(Post).order_by(Post.timestamp)
+        posts = db.session.query(Post)\
+            .filter(Post.deleted.is_(False))\
+            .order_by(Post.timestamp)
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
@@ -121,7 +125,10 @@ def jsonify_post(post_id):
             - Return the post information in JSON
     """
     try:
-        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post = db.session.query(Post)\
+            .filter(Post.id == post_id)\
+            .filter(Post.deleted.is_(False))\
+            .one()
     except NoResultFound:
         return jsonify({'error': 'No Result Found'}), 404
     except Exception:
@@ -146,7 +153,10 @@ def vote_post(post_id, request):
 
     # Vote for/against the post and store it in database
     try:
-        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post = db.session.query(Post)\
+            .filter(Post.id == post_id)\
+            .filter(Post.deleted.is_(False))\
+            .one()
         if option == 'upVote':
             post.vote_score += 1
         else:
@@ -180,7 +190,10 @@ def edit_post(post_id, request):
 
     # Edit the post and store it in database
     try:
-        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post = db.session.query(Post)\
+            .filter(Post.id == post_id)\
+            .filter(Post.deleted.is_(False))\
+            .one()
         post.body = body
         post.title = title
         db.session.add(post)
@@ -201,7 +214,10 @@ def delete_post(post_id):
     """
     try:
         # Set the deleted flag for the post to True
-        post = db.session.query(Post).filter(Post.id == post_id).one()
+        post = db.session.query(Post)\
+            .filter(Post.id == post_id)\
+            .filter(Post.deleted.is_(False))\
+            .one()
         post.deleted = True
         db.session.add(post)
         # Set the parent_deleted flag for all child comments to True
@@ -226,7 +242,10 @@ def jsonify_comments_for_post(post_id):
     """
     try:
         comments = db.session.query(Comment)\
-            .filter(Comment.parent_id == post_id).order_by(Comment.timestamp)
+            .filter(Comment.parent_id == post_id)\
+            .filter(Comment.deleted.is_(False))\
+            .filter(Comment.parent_deleted.is_(False))\
+            .order_by(Comment.timestamp)
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
@@ -303,7 +322,11 @@ def jsonify_comment(comment_id):
             - Return the comment information in JSON
     """
     try:
-        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment = db.session.query(Comment)\
+            .filter(Comment.id == comment_id)\
+            .filter(Comment.deleted.is_(False))\
+            .filter(Comment.parent_deleted.is_(False))\
+            .one()
     except NoResultFound:
         return jsonify({'error': 'No Result Found'}), 404
     except Exception:
@@ -328,7 +351,11 @@ def vote_comment(comment_id, request):
 
     # Vote for/against the comment and store it in database
     try:
-        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment = db.session.query(Comment)\
+            .filter(Comment.id == comment_id)\
+            .filter(Comment.deleted.is_(False))\
+            .filter(Comment.parent_deleted.is_(False))\
+            .one()
         if option == 'upVote':
             comment.vote_score += 1
         else:
@@ -361,7 +388,11 @@ def edit_comment(comment_id, request):
 
     # Edit the comment and store it in database
     try:
-        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment = db.session.query(Comment)\
+            .filter(Comment.id == comment_id)\
+            .filter(Comment.deleted.is_(False))\
+            .filter(Comment.parent_deleted.is_(False))\
+            .one()
         comment.body = body
         db.session.add(comment)
         db.session.commit()
@@ -381,7 +412,11 @@ def delete_comment(comment_id):
     """
     try:
         # Set the deleted flag for the comment to True
-        comment = db.session.query(Comment).filter(Comment.id == comment_id).one()  # noqa
+        comment = db.session.query(Comment)\
+            .filter(Comment.id == comment_id)\
+            .filter(Comment.deleted.is_(False))\
+            .filter(Comment.parent_deleted.is_(False))\
+            .one()
         comment.deleted = True
         db.session.add(comment)
         db.session.commit()
