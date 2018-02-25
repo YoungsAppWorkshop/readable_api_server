@@ -83,16 +83,25 @@ def add_post(request):
     if author == '' or body == '' or title == '':
         return jsonify({'error': "Post title, body and author can't be a blank"}), 400  # noqa
 
-    if not is_valid_category(category_path):
-        return jsonify({'error': 'Wrong Category'}), 400
-
-    # Create a new post and store it in Database
     try:
+        # Validate category_path from the request
+        # In SQLite, Foreign Key constraints have no effect by default,
+        # so it's necessary to validate category_path manually
+        category = db.session.query(Category)\
+            .filter(Category.path == category_path)\
+            .one()
+
+        # Create a new post and store it in Database
         new_post = Post(author=author, body=body, category_path=category_path,
                         comment_count=0, deleted=False, id=id,
                         timestamp=timestamp, title=title, vote_score=0)
         db.session.add(new_post)
+
+        # Commit changes
         db.session.commit()
+    except NoResultFound:
+        db.session.rollback()
+        return jsonify({'error': 'Wrong Category'}), 400
     except IntegrityError:
         db.session.rollback()
         return jsonify({'error': 'Duplicate Post ID'}), 400
@@ -438,14 +447,3 @@ def delete_comment(comment_id):
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
         return jsonify(comment.serialize)
-
-
-# Helper Functions
-def is_valid_category(category_path):
-    """ Check if a category_path is valid"""
-    try:
-        category = db.session.query(Category).filter_by(path=category_path).one()  # noqa
-    except Exception:
-        return False
-    else:
-        return True
