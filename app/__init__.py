@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -16,6 +16,9 @@ from .controllers import api as api_module
 app.register_blueprint(api_module, url_prefix='/api')
 
 
-@app.route('/')
-def hello_world():
-    return 'Hello, Test!'
+@app.errorhandler(404)
+def route_not_found(e):
+    """ Return an error message in JSON when clients trying
+        to get access to unavailable API endpoints
+    """
+    return jsonify({'error': 'No Result Found'}), 404
