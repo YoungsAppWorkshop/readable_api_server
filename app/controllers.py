@@ -1,3 +1,4 @@
+import datetime
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -76,6 +77,9 @@ def add_post(request):
         id = request.get_json()['id']
         timestamp = int(request.get_json()['timestamp'])
         title = request.get_json()['title'].strip()
+
+        # Convert time in milliseconds to datetime.datetime() object
+        timestamp = datetime.datetime.fromtimestamp(timestamp / 1000.0)
     except Exception:
         return jsonify({'error': 'Bad Request'}), 400
 
@@ -273,6 +277,9 @@ def add_comment():
         id = request.get_json()['id']
         parent_id = request.get_json()['parentId']
         timestamp = int(request.get_json()['timestamp'])
+
+        # Convert time in milliseconds to datetime.datetime() object
+        timestamp = datetime.datetime.fromtimestamp(timestamp / 1000.0)
     except Exception:
         return jsonify({'error': 'Bad Request'}), 400
 

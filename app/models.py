@@ -36,7 +36,7 @@ class Post(db.Model):
         comment_count: int. Number of comments for the post
         deleted: bool. Flag variable if the post is deleted
         id: string. UUID(v4). Primary key
-        timestamp: int. timestamp of the post created
+        timestamp: datetime.datetime(). timestamp of the post created
         title: string. Title of the post
         vote_score: int. Vote score of the post
     """
@@ -49,7 +49,7 @@ class Post(db.Model):
     comment_count = db.Column(db.Integer)
     deleted = db.Column(db.Boolean, nullable=False)
     id = db.Column(db.String(36), primary_key=True)
-    timestamp = db.Column(db.Integer, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False)
     title = db.Column(db.String(), nullable=False)
     vote_score = db.Column(db.Integer)
 
@@ -59,7 +59,10 @@ class Post(db.Model):
 
     @property
     def serialize(self):
-        """ Return object data in easily serializeable format"""
+        """ Return object data in easily serializeable format
+                - timestamp: convert Python datetime.datetime() object to
+                    JavaScript Date.now() object (time in milliseconds)
+        """
         return {
             'author': self.author,
             'body': self.body,
@@ -67,7 +70,7 @@ class Post(db.Model):
             'commentCount': self.comment_count,
             'deleted': self.deleted,
             'id': self.id,
-            'timestamp': self.timestamp,
+            'timestamp': int(self.timestamp.timestamp() * 1000),
             'title': self.title,
             'voteScore': self.vote_score
         }
@@ -83,7 +86,7 @@ class Comment(db.Model):
         id: string. UUID(v4). Primary key
         parent_deleted: bool. Flag variable if the parent post is deleted
         parent_id: string. UUID(v4). ID of a Post. Foreign Key
-        timestamp: int. timestamp of the comment created
+        timestamp: datetime.datetime(). timestamp of the comment created
         vote_score: int. Vote score of the comment
     """
     __tablename__ = 'comment'
@@ -95,7 +98,7 @@ class Comment(db.Model):
     parent_deleted = db.Column(db.Boolean, nullable=False)
     parent_id = db.Column(db.String(36), db.ForeignKey('post.id'))
     post = db.relationship(Post)
-    timestamp = db.Column(db.Integer, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False)
     vote_score = db.Column(db.Integer)
 
     def __repr__(self):
@@ -104,7 +107,10 @@ class Comment(db.Model):
 
     @property
     def serialize(self):
-        """ Return object data in easily serializeable format"""
+        """ Return object data in easily serializeable format
+                - timestamp: convert Python datetime.datetime() object to
+                    JavaScript Date.now() object (time in milliseconds)
+        """
         return {
             'author': self.author,
             'body': self.body,
@@ -112,6 +118,6 @@ class Comment(db.Model):
             'id': self.id,
             'parentDeleted': self.parent_deleted,
             'parentId': self.parent_id,
-            'timestamp': self.timestamp,
+            'timestamp': int(self.timestamp.timestamp() * 1000),
             'voteScore': self.vote_score
         }
