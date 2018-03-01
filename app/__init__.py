@@ -2,11 +2,14 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+app = Flask(__name__, instance_relative_config=True)
 
 # Load default config
 app.config.from_object('config')
+app.config.from_pyfile('config.py')
+
+# Allow CORS
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Create a Database object
 db = SQLAlchemy(app)
