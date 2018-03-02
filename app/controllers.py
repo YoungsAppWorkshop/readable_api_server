@@ -38,7 +38,7 @@ def jsonify_posts_for_category(category):
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify([post.serialize for post in posts])
+        return jsonify(posts=[post.serialize for post in posts])
 
 
 @api.route('/posts', methods=['GET', 'POST'])
@@ -62,7 +62,7 @@ def jsonify_all_posts():
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify([post.serialize for post in posts])
+        return jsonify(posts=[post.serialize for post in posts])
 
 
 def add_post(request):
@@ -113,7 +113,7 @@ def add_post(request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(new_post.serialize)
+        return jsonify(post=new_post.serialize)
 
 
 @api.route('/posts/<post_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -140,14 +140,13 @@ def jsonify_post(post_id):
     try:
         post = db.session.query(Post)\
             .filter(Post.id == post_id)\
-            .filter(Post.deleted.is_(False))\
             .one()
     except NoResultFound:
         return jsonify({'error': 'No Result Found'}), 404
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(post.serialize)
+        return jsonify(post=post.serialize)
 
 
 def vote_post(post_id, request):
@@ -183,7 +182,7 @@ def vote_post(post_id, request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(post.serialize)
+        return jsonify(post=post.serialize)
 
 
 def edit_post(post_id, request):
@@ -218,7 +217,7 @@ def edit_post(post_id, request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(post.serialize)
+        return jsonify(post=post.serialize)
 
 
 def delete_post(post_id):
@@ -245,7 +244,7 @@ def delete_post(post_id):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(post.serialize)
+        return jsonify(post=post.serialize)
 
 
 @api.route('/posts/<post_id>/comments', methods=['GET'])
@@ -262,7 +261,7 @@ def jsonify_comments_for_post(post_id):
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify([comment.serialize for comment in comments])
+        return jsonify(comments=[comment.serialize for comment in comments])
 
 
 @api.route('/comments', methods=['POST'])
@@ -313,7 +312,7 @@ def add_comment():
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(new_comment.serialize)
+        return jsonify(comment=new_comment.serialize)
 
 
 @api.route('/comments/<comment_id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -348,7 +347,7 @@ def jsonify_comment(comment_id):
     except Exception:
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(comment.serialize)
+        return jsonify(comment=comment.serialize)
 
 
 def vote_comment(comment_id, request):
@@ -385,7 +384,7 @@ def vote_comment(comment_id, request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(comment.serialize)
+        return jsonify(comment=comment.serialize)
 
 
 def edit_comment(comment_id, request):
@@ -419,7 +418,7 @@ def edit_comment(comment_id, request):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(comment.serialize)
+        return jsonify(comment=comment.serialize)
 
 
 def delete_comment(comment_id):
@@ -453,4 +452,4 @@ def delete_comment(comment_id):
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error'}), 500
     else:
-        return jsonify(comment.serialize)
+        return jsonify(comment=comment.serialize)
