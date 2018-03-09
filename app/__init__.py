@@ -18,7 +18,7 @@ db = SQLAlchemy(app)
 from .controllers import api as api_module
 
 # Register blueprint, set its url prefix: app.url/api
-app.register_blueprint(api_module, url_prefix='/api')
+app.register_blueprint(api_module)
 
 
 @app.errorhandler(404)
