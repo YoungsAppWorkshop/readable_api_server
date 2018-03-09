@@ -9,7 +9,7 @@ app.config.from_object('config')
 app.config.from_pyfile('config.py')
 
 # Allow CORS
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(app, resources={r"*": {"origins": "*"}})
 
 # Create a Database object
 db = SQLAlchemy(app)
