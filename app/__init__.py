@@ -27,3 +27,12 @@ def route_not_found(e):
         to get access to unavailable API endpoints
     """
     return jsonify({'error': 'No Result Found'}), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    """ Return an error message in JSON when the method specified
+        in the request-line is not allowed for the resource identified
+        by the request-URI
+    """
+    return jsonify({'error': 'Method Not Allowed'}), 405
