@@ -5,8 +5,10 @@
 * 프론트엔드 깃허브 저장소: [Readable](https://github.com/YoungsAppWorkshop/readable/blob/master/README_ko.md)
 * 영문 리드미(English README) 파일: [README.md](/README.md)
 
-## 데모
-데모 웹사이트 URL: https://readable.youngsappworkshop.com
+## 스크린샷
+| 메인 페이지         | 포스트 수정 화면    |
+|------------------|-----------------|
+|![Screenshot_01](https://github.com/YoungsAppWorkshop/readable_api_server/blob/master/ScreenShot_01.jpg?raw=true)| ![Screenshot_02](https://github.com/YoungsAppWorkshop/readable_api_server/blob/master/ScreenShot_02.jpg?raw=true) |
 
 ## 설치 방법
 
